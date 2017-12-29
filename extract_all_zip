@@ -1,93 +1,50 @@
-#!/bin/bash
-# 指定したディレクトリ以下のzipファイルを全て展開する
-# TODO: cd使ったほうがパスを気にせずに書ける？
-
-DIR="${1:-.}"
-USAGE="Usage: $(basename "$(which "$0")") [dir]"
+#!/usr/bin/env bash
+# extract_all_zip :現在ディレクトリ以下のzipファイルを全て展開する
+# -----------------------------------------------------------------------------
+readonly ME="$(basename ${0})"
+readonly VERSION="1.0"
 
 usage_exit() {
-	[[ -n "$1" ]] && echo "$1" >&2
-	echo "${USAGE}" >&2
-	exit 1
+  [[ -n "${1}" ]] && echo "${1}" >&2
+  echo "Usage: $(basename "${0}") dir"
+  exit 1
+}
+version() {
+  echo "${VERSION}"
 }
 
-#####################################################
-# zipを展開する
-# Globals:
-#		None:
-# Arguments:
-#		ZIP_PATH:			展開するzipファイルのパス
-#		DEST_DIR:			展開先ディレクトリ
-# Return:
-#		None
-#####################################################
-extract_zip() {
-	local -r ZIP_PATH="$1"
-	local -r DEST_DIR="${2:-.}"
+IFS=$'\n'
+# -----------------------------------------------------------------------------
+# Main
+# -----------------------------------------------------------------------------
+main() {
+  local -r CURRENT_DIR="${1%/}"
+  local zips
+  local zip
+  local dir
 
-	if [[ ! -f "${ZIP_PATH}" ]]; then
-		echo "${ZIP_PATH}が存在しません" >&2
-		return 1
-	fi
-	if [[ ! -d "${DEST_DIR}" ]]; then
-		echo "${DEST_DIR}が存在しません" >&2
-		return 1
-	fi
-	# ログ出力したい
-	if ! unzip -t "${ZIP_PATH}" > /dev/null 2>&1; then
-		echo "${ZIP_PATH}は展開できません" >&2
-		return 1
-	fi
+  [[ -z "${CURRENT_DIR}" ]] && usage_exit
+  [[ ! -d "${CURRENT_DIR}" ]] && usage_exit "ディレクトリが存在しません"
 
-	# 空白をアンダーバーに変更
-	# TODO: もうちょいうまい方法はないか。。。
-	local basename
-	local extracted_path
-	local renamed_path
-	basename="$(basename "${ZIP_PATH}" .zip)"
-	extracted_path="${DEST_DIR}/${basename}"
-	renamed_path="${DEST_DIR}/$(echo ${basename} | tr ' ' '_')";
+  (
+    cd "${CURRENT_DIR}"
+    # zip展開するとまたzipが抽出される可能性があるため、確認
+    while zips="$(ls | grep -E -x '^.*\.zip$')"; do
 
-	unzip "${ZIP_PATH}" -d "${DEST_DIR}"
+      for zip in ${zips}; do
+        # 壊れているファイルの場合は除外する
+        unzip -t "${zip}" > /dev/null 2>&1 || mv "${zip}" "${zip}.broken"
+        # 展開し、元のファイルを消す
+        # 同一ファイルが存在する場合は上書きする
+        unzip -u "${zip}" && rm "${zip}"
+      done
+    done
 
-	mv "${extracted_path}" "${renamed_path}"
+    # ディレクトリを再帰
+    for dir in $(find -mindepth 1 -maxdepth 1 -type d); do
+      main "${dir}"
+    done
+  ) 
 }
 
-[[ ! -d "${DIR}" ]] && usage_exit "${DIR}はディレクトリではありません"
-
-# zipを解凍したらzipが出て来る可能性があるためzipが無くなるで続ける
-# whileの条件式は、zipが存在しないと*.zipのパス展開の終了ステータスが1になる
-while zip_files="$(ls "${DIR}"/*.zip 2> /dev/null)"; do
-	(
-		IFS=$'\n'
-		for zip_file in ${zip_files}; do
-
-			# => extract_zipを判定させるので事前の-tチェックは不要
-			# zipが壊れてると判定されたままにrmされるのは駄目なので止める
-			# add: これ外すと展開が出来なかったときに*.zipが${DIR}から消えないので
-			# 無限ループになるわ。。。
-			if ! unzip -t "${zip_file}" > /dev/null 2>&1; then
-				usage_exit "${zip_file}は壊れています"
-			fi
-
-			if extract_zip "${zip_file}" "${DIR}"; then
-				echo "${zip_file}を解凍しました"
-				rm "${zip_file}"
-			fi
-		done
-	)
-done
-
-# ディレクトリの一覧を作って再帰
-#(
-#	IFS=$'\n'
-#	for next_dir in $(find "${DIR}" -type d -mindepth 1 -maxdepth 1); do
-#		extract_all_zip "${next_dir}"
-#	done
-#)
-find "${DIR}" -type d -mindepth 1 -maxdepth 1 |
-while read next_dir; do
-	extract_all_zip "${next_dir}"	
-done
-
-exit 0
+main "$@"
