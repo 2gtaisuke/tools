@@ -1,0 +1,21 @@
+#!/usr/local/bin/bash
+# ディレクトリ内をインタラクティブにきいてゴミ箱ディレクトリに詰める
+
+USAGE=""$(basename "$(which "$0")")""
+# ゴミ箱ディレクトリ
+TRASH="./trash"
+
+# ゴミ箱ディレクトリを作成
+[[ ! -d "${TRASH}" ]] || mkdir "${TRASH}"
+
+all=$#
+cnt=1
+for f
+do
+	echo "${f}"
+	read -p "(${all}/${cnt})不要？[y/n] " ans
+	if [[ "${ans}" =~ ^[yY]{1}(es)?$ ]]; then
+		mv "$f" "${TRASH}"
+	fi
+	((cnt = cnt + 1))
+done

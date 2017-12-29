@@ -1,0 +1,21 @@
+#!/usr/local/bin/bash
+# fswatchでディレクトリを監視してzipが来たら解凍して移動
+
+readonly USAGE="Usage: "$(basename "$(which "$0")")""
+
+if [[ ! -d "$1" ]]; then
+	echo "Usage: `basename "$0"` directory" >&2
+	exit 1
+fi
+
+echo wacthing... "$1"
+cd "${1}"
+
+# -Ee -Ei 全てを除外し、zipのみを許可
+# -l レイテンシー 5
+# TODO: rarも入れる
+fswatch -0 -Ee '^.*$' -Ei '^.*\.zip$' -l 5 --event Created "$1" |
+while read -d "" path
+do
+	extract_all_zip .
+done

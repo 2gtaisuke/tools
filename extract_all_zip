@@ -1,0 +1,93 @@
+#!/bin/bash
+# 指定したディレクトリ以下のzipファイルを全て展開する
+# TODO: cd使ったほうがパスを気にせずに書ける？
+
+DIR="${1:-.}"
+USAGE="Usage: $(basename "$(which "$0")") [dir]"
+
+usage_exit() {
+	[[ -n "$1" ]] && echo "$1" >&2
+	echo "${USAGE}" >&2
+	exit 1
+}
+
+#####################################################
+# zipを展開する
+# Globals:
+#		None:
+# Arguments:
+#		ZIP_PATH:			展開するzipファイルのパス
+#		DEST_DIR:			展開先ディレクトリ
+# Return:
+#		None
+#####################################################
+extract_zip() {
+	local -r ZIP_PATH="$1"
+	local -r DEST_DIR="${2:-.}"
+
+	if [[ ! -f "${ZIP_PATH}" ]]; then
+		echo "${ZIP_PATH}が存在しません" >&2
+		return 1
+	fi
+	if [[ ! -d "${DEST_DIR}" ]]; then
+		echo "${DEST_DIR}が存在しません" >&2
+		return 1
+	fi
+	# ログ出力したい
+	if ! unzip -t "${ZIP_PATH}" > /dev/null 2>&1; then
+		echo "${ZIP_PATH}は展開できません" >&2
+		return 1
+	fi
+
+	# 空白をアンダーバーに変更
+	# TODO: もうちょいうまい方法はないか。。。
+	local basename
+	local extracted_path
+	local renamed_path
+	basename="$(basename "${ZIP_PATH}" .zip)"
+	extracted_path="${DEST_DIR}/${basename}"
+	renamed_path="${DEST_DIR}/$(echo ${basename} | tr ' ' '_')";
+
+	unzip "${ZIP_PATH}" -d "${DEST_DIR}"
+
+	mv "${extracted_path}" "${renamed_path}"
+}
+
+[[ ! -d "${DIR}" ]] && usage_exit "${DIR}はディレクトリではありません"
+
+# zipを解凍したらzipが出て来る可能性があるためzipが無くなるで続ける
+# whileの条件式は、zipが存在しないと*.zipのパス展開の終了ステータスが1になる
+while zip_files="$(ls "${DIR}"/*.zip 2> /dev/null)"; do
+	(
+		IFS=$'\n'
+		for zip_file in ${zip_files}; do
+
+			# => extract_zipを判定させるので事前の-tチェックは不要
+			# zipが壊れてると判定されたままにrmされるのは駄目なので止める
+			# add: これ外すと展開が出来なかったときに*.zipが${DIR}から消えないので
+			# 無限ループになるわ。。。
+			if ! unzip -t "${zip_file}" > /dev/null 2>&1; then
+				usage_exit "${zip_file}は壊れています"
+			fi
+
+			if extract_zip "${zip_file}" "${DIR}"; then
+				echo "${zip_file}を解凍しました"
+				rm "${zip_file}"
+			fi
+		done
+	)
+done
+
+# ディレクトリの一覧を作って再帰
+#(
+#	IFS=$'\n'
+#	for next_dir in $(find "${DIR}" -type d -mindepth 1 -maxdepth 1); do
+#		extract_all_zip "${next_dir}"
+#	done
+#)
+find "${DIR}" -type d -mindepth 1 -maxdepth 1 |
+while read next_dir; do
+	extract_all_zip "${next_dir}"	
+done
+
+exit 0

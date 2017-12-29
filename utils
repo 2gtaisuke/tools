@@ -1,0 +1,93 @@
+#!bin/bash
+#############################################################
+# ame :作業音再生
+#############################################################
+# TODO: いずれデーモン化したい
+ame() {
+	afplay "${DROPBOX_HOME}/sound/ame_3hour.mp3" > /dev/null 2>&1 &
+}
+
+#############################################################
+# tmp_sh [dir] :一時シェルスクリプト作成
+#############################################################
+tmp_sh() {
+	local dest_dir="${1}"
+	local suffix_num
+
+	# パラメータ展開使いたかったけど、変数の代入は出来なかった気が。。
+	if [[ -z "${dest_dir}" ]]; then
+		dest_dir="${SANDBOX}"	
+	fi
+
+	if [[ ! -d "${dest_dir}" ]]; then
+		echo "${dest_dir}がありません" >&2
+		return 1
+	fi
+
+	cd "${dest_dir}"
+	suffix_num=1
+
+	# ディレクトリ作れるまでsufix_numインクリメントする
+	while ! mkdir "tmp${suffix_num}" > /dev/null 2>&1; do
+		((suffix_num += 1))
+	done
+
+	cd "tmp${suffix_num}"	
+
+	echo '#!/bin/bash' > tmp.sh && chmod 764 tmp.sh && vim tmp.sh
+}
+
+#############################################################
+# ssh_host [-u user] :.ssh/configファイルからhostを選んでssh接続
+#############################################################
+ssh_host() {
+	# configファイルが無ければ抜ける
+	local SSH_CONFIG=$HOME/.ssh/config
+	if [ ! -f $SSH_CONFIG ]; then
+		echo "$ssh_config is not exist" >&2
+		return 1
+	fi
+
+	# ユーザー指定されたらつける
+	local user=
+	case "$1" in
+		-u)
+			user="${2}@" ;;
+		*)
+			;;
+	esac
+
+	ssh $user`cat $SSH_CONFIG | gsed -E -n 's/Host //p' | peco`
+}
+
+#############################################################
+# create_byte_file file [byte] :指定したサイズのファイルを作る
+#############################################################
+create_byte_file() {
+	local -r USAGE="Usage: create_byte_file_specified file [byte]"
+	local -r file="${1}"
+	local -r byte="${2:-128}"
+
+	if [[ -z "${1}" ]]; then
+		echo "${USAGE}" >&2
+		return 1
+	fi
+
+	dd if=/dev/zero of="${1}" bs=1M count="${byte}"
+}
+
+#############################################################
+# utils_peco [args] :ユーティリティをpecoで一覧する
+#############################################################
+utils_peco() {
+	local -r UTILS="${HOME}/bin/utils"
+# util.shの関数ヘッダー内を抜き取ってpecoで選び、コマンド展開
+# コマンド名と:以降の使い方の表示を見やすくしたい。
+	$(
+		sed -E -n '/^#{5,}$/,/^#{5,}$/p' "${UTILS}" |
+		sed -E '/^#{5,}$/d' |
+		sed -E 's/^# (.*)$/\1/g' |
+		peco |
+		sed -E 's/^([^ ]+) .*$/\1/g'
+	) "$@"
+}
