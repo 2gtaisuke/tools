@@ -83,9 +83,10 @@ create_byte_file() {
 # -----------------------------------------------------------------------------
 utils_peco() {
 	local -r UTILS="${HOME}/bin/utils"
+
   # util.shの関数ヘッダー内を抜き取ってpecoで選び実行
   $(
-    cat utils |
+    cat "${UTILS}" |
     sed 3d |
     sed -E -n '/^# -{5,}$/,/^# -{5,}$/p' |
     sed -E '/^# -{5,}$/d' |
@@ -104,12 +105,9 @@ commands_peco() {
   local f
   local BIN_DIR="${HOME}/bin"
 
-  (
-    cd "${BIN_DIR}" 
-
     # カレントディレクトリの実行可能ファイルのみをループ
     $(
-      for f in $(find -mindepth 1 -maxdepth 1 -type f -executable); do
+      for f in $(find "${BIN_DIR}" -mindepth 1 -maxdepth 1 -type f -executable); do
         cat "${f}" |
         sed -n 2p |
         sed -E 's/^# ([^ ]+) : ?(.*)$/\1 \2/g' |
@@ -118,5 +116,4 @@ commands_peco() {
       peco |
       sed -E 's/^([^ ]+) .*$/\1/g'
     ) "${@}"
-  )
 }
