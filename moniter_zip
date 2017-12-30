@@ -1,6 +1,6 @@
-#!/usr/local/bin/bash
-# fswatchでディレクトリを監視してzipが来たら解凍して移動
-
+#!/usr/bin/env bash
+# moniter_zip : fswatchでディレクトリを監視してzipが来たら解凍して移動
+# -----------------------------------------------------------------------------
 readonly USAGE="Usage: "$(basename "$(which "$0")")""
 
 if [[ ! -d "$1" ]]; then
@@ -19,3 +19,14 @@ while read -d "" path
 do
 	extract_all_zip .
 done
+readonly ME="$(basename ${0})"
+readonly VERSION="1.0"
+
+usage_exit() {
+  [[ -n "${1}" ]] && echo "${1}" >&2
+  echo "Usage: ${ME} param"
+  exit 1
+}
+version() {
+  echo "${VERSION}"
+}
