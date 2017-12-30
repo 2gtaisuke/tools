@@ -11,6 +11,7 @@ usage_exit() {
 }
 version() {
   echo "${VERSION}"
+  exit 0
 }
 
 IFS=$'\n'
