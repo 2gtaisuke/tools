@@ -34,7 +34,7 @@ main() {
 
       for zip in ${zips}; do
         # 壊れているファイルの場合は名前を変更して除外する
-        if unzip -t "${zip}" > /dev/null 2>&1; then
+        if ! unzip -t "${zip}" > /dev/null 2>&1; then
           mv "${zip}" "${zip}.broken"
           continue
         fi
