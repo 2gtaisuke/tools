@@ -28,13 +28,13 @@ main() {
 
   (
     cd "${CURRENT_DIR}"
-    # zip展開するとまたzipが抽出される可能性があるため、確認
+    # zip展開するとまたzipが抽出される可能性があるため、なくなるまでループ
     while zips="$(ls | grep -E -x '^.*\.zip$')"; do
 
       for zip in ${zips}; do
-        # 壊れているファイルの場合は除外する
+        # 壊れているファイルの場合は名前を変更して除外する
         unzip -t "${zip}" > /dev/null 2>&1 || mv "${zip}" "${zip}.broken"
-        # 展開し、元のファイルを消す
+        # 展開し、元のファイルを削除
         # 同一ファイルが存在する場合は上書きする
         unzip -u "${zip}" && rm "${zip}"
       done
