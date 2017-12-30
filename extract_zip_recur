@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+readonly ME="$(basename ${0})"
+readonly VERSION="1.0"
+readonly USAGE="Usage: ${ME} zip_file"
+
+usage_exit() {
+  [[ -n "${1}" ]] && echo "${1}" >&2
+  echo "${USAGE}" >&2
+  exit 1
+}
+version() {
+  echo "${VERSION}"
+}
+
+ZIP_FILES=
+DIRS=
+IFS=$'\n'
+# -----------------------------------------------------------------------------
+# extract_unzip_opt_l : unzip -lからファイルのリスト行を抽出
+# -----------------------------------------------------------------------------
+extract_unzip_opt_l() {
+  unzip -l "${1}" |
+  head -n -2 |
+  sed 1,3d |
+  awk '{ $1 = ""; $2 = ""; $3 = ""; print }' |
+  sed -E 's/^[ \t]*//'
+}
+
+# -----------------------------------------------------------------------------
+# extract_zip : ZIP_FILESに存在するzipファイルを展開する
+# -----------------------------------------------------------------------------
+extract_zip() {
+  local target_zip
+  local tmp_zip_inner_list
+
+  # 処理リストから１行抽出して削除
+  local target_zip="$(head -1 <<< ${ZIP_FILES})"
+  ZIP_FILES="$(sed '1d' <<< ${ZIP_FILES})";
+
+  # 処理リストから処理すべきファイルが無くなれば削除
+  if [[ -z "${target_zip}" ]]; then
+    return 0
+  fi
+  
+  # 存在しない場合場合は次のzip処理に移る
+  if [[ ! -f "${target_zip}" ]]; then
+    echo "${target_zip}が存在しません" >&2
+    extract_zip
+    return 1
+  fi
+
+  # 壊れている場合は名前を変更して除外。次のzip処理に移る
+  if ! unzip -t "${target_zip}" > /dev/null 2>&1; then
+    echo "${target_zip}は壊れています" >&2
+    mv "${target_zip}" "${target_zip}.broken"
+    extract_zip
+    return 1
+  fi
+
+  # zip内の展開リストを一時保存
+  tmp_zip_inner_list="$(
+    extract_unzip_opt_l "${target_zip}"
+  )"
+
+  # 展開リストからカレントディレクトリのzipのリストを保存
+  ZIP_FILES="${ZIP_FILES}
+$(
+    echo "${tmp_zip_inner_list}" |
+    grep -v '/' |  # カレントディレクトリ以外のzipを除外
+    grep -E '^.*\.zip$'
+  )"
+  ZIP_FILES="$(sed -E '/^$/d' <<< $ZIP_FILES)"
+
+  # 展開リストからディレクトリのリストを保存
+  DIRS="${DIRS}
+$(
+    echo "${tmp_zip_inner_list}" |
+    grep -E '^.*\/$' |    # ディレクトリを抽出
+    grep -E -v '^.*/.*/$' # 現在の階層以外を除外
+  )"
+  DIRS="$(sed -E '/^$/d' <<< $DIRS)"
+
+  # 展開して再帰
+  unzip -u "${target_zip}" && rm "${target_zip}"
+  extract_zip
+
+  return 0
+}
+# -----------------------------------------------------------------------------
+# Main
+# -----------------------------------------------------------------------------
+main() {
+  local dir
+
+  [[ -z "${1}" ]] && usage_exit
+  [[ ! -f "${1}" ]] && usage_exit 'ファイルが存在しません'
+
+  # ファイルの存在するディレクトリへ移動
+  cd "$(dirname "${1}")"
+
+  # 処理リストに入れる
+  ZIP_FILES="${1}"
+
+  # カレントディレクトリのzipファイルを展開してディレクトリリスト取得
+  extract_zip
+
+  # ディレクトリ以下のzipを再帰的に全て展開
+  for dir in ${DIRS}; do
+    extract_all_zip "${dir}"
+  done
+
+  exit 0
+}
+
+main "$@"
