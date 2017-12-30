@@ -117,3 +117,29 @@ commands_peco() {
       sed -E 's/^([^ ]+) .*$/\1/g'
     ) "${@}"
 }
+
+# -----------------------------------------------------------------------------
+# peco_dir dir_name :dirの中身をpecoで表示して選択したファイルを開く
+# -----------------------------------------------------------------------------
+peco_dir() {
+  local -r DIR_NAME="${1}"
+  local selected_file
+
+  case "${DIR_NAME}" in
+    b|bin|binary)
+      vim "${HOME}/bin/$(\ls "${HOME}/bin" | peco)"
+      ;; 
+    d|dot|dotfile|dotfiles)
+      selected_file="$(
+        find "${HOME}/dotfiles/" -mindepth 1 -maxdepth 1 -type f |
+        sed -E 's/^.*\/([^/]+)$/\1/g' | peco
+      )"
+      [[ -z "${selected_file}" ]] && return 1
+
+      vim "${HOME}/dotfiles/${selected_file}"
+      ;;
+    m|md|markdown)
+      vim "${MARKDOWN_HOME}/$(\ls "${MARKDOWN_HOME}" | peco)"
+      ;;
+  esac
+}
