@@ -6,7 +6,7 @@ readonly VERSION="1.0"
 
 usage_exit() {
   [[ -n "${1}" ]] && echo "${1}" >&2
-  echo "Usage: $(basename "${0}") dir"
+  echo "Usage: ${ME} dir"
   exit 1
 }
 version() {
