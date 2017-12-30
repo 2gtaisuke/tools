@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# extract_zip_recur :指定したzipファイルを再帰的に全て展開する
+# -----------------------------------------------------------------------------
 readonly ME="$(basename ${0})"
 readonly VERSION="1.0"
 readonly USAGE="Usage: ${ME} zip_file"
