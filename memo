@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------
 readonly ME="$(basename ${0})"
 readonly VERSION="1.0"
-readonly MEMO_DIR="${HOME}/var/markdown"
+readonly MEMO_DIR="${MARKDOWN_DIR}/memo"
 
 usage_exit() {
 

@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------
 # TODO: いずれデーモン化したい
 ame() {
-	afplay "${DROPBOX_HOME}/sound/ame_3hour.mp3" > /dev/null 2>&1 &
+	afplay "${DROPBOX_DIR}/sound/ame_3hour.mp3" > /dev/null 2>&1 &
 }
 
 # -----------------------------------------------------------------------------
@@ -139,7 +139,7 @@ peco_dir() {
       vim "${HOME}/dotfiles/${selected_file}"
       ;;
     m|md|markdown)
-      vim "${MARKDOWN_HOME}/$(\ls "${MARKDOWN_HOME}" | peco)"
+      vim "${MARKDOWN_DIR}/$(\ls "${MARKDOWN_DIR}" | peco)"
       ;;
   esac
 }

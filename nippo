@@ -2,13 +2,13 @@
 # nippo : 日報ファイル日付から作成するor開く
 # -----------------------------------------------------------------------------
 # 日報ファイルを置くディレクトリ
-readonly NIPPO_HOME="${MARKDOWN_HOME}/nippo"
+readonly NIPPO_DIR="${MARKDOWN_DIR}/nippo"
 readonly USAGE="$(basename "$(which $0)") [-p] YYYYMMDD|YYMMDD|MMDD|DD|D"
 
 # -----------------------------------------------------------------------------
 # 日報ファイルを作成する
 # Globals:
-#		MARKDOWN_HOME	markdownファイルを保存するディレクトリ
+#		MARKDOWN_DIR	markdownファイルを保存するディレクトリ
 # Arguments:
 #		day_file			YYYYMMDD.md
 # Return:
@@ -56,9 +56,9 @@ usage_exit() {
 }
 
 # -----------------------------------------------------------------------------
-# peco経由でNIPPO_HOME内のファイルを返す
+# peco経由でNIPPO_DIR内のファイルを返す
 # Globals:
-#		MARKDOWN_HOME:	markdownファイルを保存するディレクトリ
+#		MARKDOWN_DIR:	markdownファイルを保存するディレクトリ
 # Arguments:
 #		None						
 # Return:
@@ -67,10 +67,10 @@ usage_exit() {
 fetch_file_path_via_peco() {
 	local nippo_files
 	local nippo_file
-	nippo_files="$(ls "${NIPPO_HOME}" | grep -E '^[0-9]{8}\.md$')"
+	nippo_files="$(ls "${NIPPO_DIR}" | grep -E '^[0-9]{8}\.md$')"
 
 	if [[ -z "${nippo_files}" ]]; then
-		echo "${NIPPO_HOME} is empty" >&2
+		echo "${NIPPO_DIR} is empty" >&2
 		return 1
 	fi
 
@@ -81,14 +81,14 @@ fetch_file_path_via_peco() {
 		return 1
 	fi
 
-	echo "${NIPPO_HOME}/${nippo_file}"
+	echo "${NIPPO_DIR}/${nippo_file}"
 }
 
 
 # -----------------------------------------------------------------------------
 # 日付からYYYYMMDD.mdを組み立てて返す
 # Globals:
-#		MARKDOWN_HOME:	markdownファイルを保存するディレクトリ
+#		MARKDOWN_DIR:	markdownファイルを保存するディレクトリ
 # Arguments:
 #		date:						
 # Return:
@@ -114,14 +114,14 @@ fetch_file_path_from_date() {
 		return 1
 	fi
 
-	echo "${NIPPO_HOME}/${day}.md"
+	echo "${NIPPO_DIR}/${day}.md"
 }
 
 # -----------------------------------------------------------------------------
 # Main
 # -----------------------------------------------------------------------------
-if [ ! -d "${NIPPO_HOME}" ]; then
-	echo "\$NIPPPO_HOME(${NIPPPO_HOME}) is not directory" >&2
+if [ ! -d "${NIPPO_DIR}" ]; then
+	echo "\$NIPPO_DIR(${NIPPO_DIR}) is not directory" >&2
 	exit 1
 fi
 
@@ -157,7 +157,7 @@ else
 		day_file="$(fetch_file_path_from_date "$1")"
 		success_flg="$?"
 	else
-		day_file="$NIPPO_HOME/$(date '+%Y%m%d').md"
+		day_file="$NIPPO_DIR/$(date '+%Y%m%d').md"
 	fi
 fi
 
