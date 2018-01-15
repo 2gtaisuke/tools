@@ -18,7 +18,7 @@ tmp_sh() {
 
 	# パラメータ展開使いたかったけど、変数の代入は出来なかった気が。。
 	if [[ -z "${dest_dir}" ]]; then
-		dest_dir="${SANDBOX}"	
+		dest_dir="$HOME/var/tmp"
 	fi
 
 	if [[ ! -d "${dest_dir}" ]]; then
