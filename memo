@@ -134,7 +134,7 @@ do
           ;;
         *) usage_exit
           ;;
-			esac	
+      esac
         ;;
 
     # short options
